@@ -92,34 +92,31 @@ public class App {
         String bucketName = s3Obj.getString(AWS_BUCKET_ENV_VAR);
     	String bucketAccessKey = s3Obj.getString(AWS_ACCESS_KEY_ENV_VAR);
     	String bucketSecretKey = s3Obj.getString(AWS_SECRET_KEY_ENV_VAR);
+    	String bucketRegion = s3Obj.getString(AWS_REGION_ENV_VAR);
     	
     	JSONObject sqsObj = obj.getJSONArray(AWS_SQS_ENV_VAR).getJSONObject(0).getJSONObject(AWS_CREDENTIALS_ENV_VAR);
     	String queueName = sqsObj.getString(AWS_QUEUE_ENV_VAR);
     	String queueAccessKey = sqsObj.getString(AWS_ACCESS_KEY_ENV_VAR);
     	String queueSecretKey = sqsObj.getString(AWS_SECRET_KEY_ENV_VAR);
+    	String queueRegion = sqsObj.getString(AWS_REGION_ENV_VAR);
     	
     	System.out.println("Initializing AWS Client...");
     	//Set up credentials and AWS clients
     	BasicAWSCredentials myS3Creds = new BasicAWSCredentials(bucketAccessKey, bucketSecretKey);
     	AmazonS3 s3 = new AmazonS3Client(myS3Creds);
+    	s3.setRegion(Region.getRegion(Regions.fromName(bucketRegion)));
 
     	BasicAWSCredentials mySQSCreds = new BasicAWSCredentials(queueAccessKey, queueSecretKey);
         AmazonSQS sqs = new AmazonSQSClient(mySQSCreds);
+        sqs.setRegion(Region.getRegion(Regions.fromName(queueRegion)));
 	    
         String monitoredDirectory = envVar.get(MONITORED_DIRECTORY_ENV_VAR);
 	    
-		
-		//Create queue if one is not set up
-		queueURL = sqs.getQueueUrl(queueName).getQueueUrl();
-		System.out.println("Queue Name: " + queueURL);
-		if (queueURL == null) { 
-			queueURL = setupQueue(sqs, queueName);
-		}
-		
 	    //Content type stays constant
 	    metadata.setContentType(IMAGE_CONTENT_MIME_TYPE);
 	    
 	    //Poll local directory for changes - Loop infinitely
+	    System.out.println("Polling Directory " + monitoredDirectory);
         while (true) {
 	    	 try {
 	    		 Thread.sleep(TIMEOUT);
@@ -133,6 +130,7 @@ public class App {
 		    	    		//Read the file
 		    	    		image = ImageIO.read(fileToUpload);
 				            
+		    	    		System.out.println("Uploading file: " + fileToUpload.getName());
 				            //Upload the file with metadata
 				            imageByteArray = getImageData(image);
 			                stream = new ByteArrayInputStream(imageByteArray);
@@ -140,7 +138,9 @@ public class App {
 			                key = UUID.randomUUID().toString();
 			                s3.putObject(new PutObjectRequest(bucketName, key, stream, metadata));
 			                fileToUpload.delete();
+			                System.out.println("Object key: " + key);
 				            
+			                System.out.println("Updating Queue...");
 				            // Send a message on the queue
 				            sqs.sendMessage(new SendMessageRequest(queueURL, key));
 		    	    	}
@@ -174,22 +174,6 @@ public class App {
 			return imageByteArray;
 	}
 
-	  private static String setupQueue(AmazonSQS sqs, String queueName) {
-		  String retVal = null;
-		  try {
-	            // Create a queue
-	            System.out.println("Creating a new SQS queue called MyQueue.\n");
-	            CreateQueueRequest createQueueRequest = new CreateQueueRequest(queueName);
-	             retVal = sqs.createQueue(createQueueRequest).getQueueUrl();
-	        } catch (AmazonServiceException ase) {
-	            System.out.println("Error Message:    " + ase.getMessage());
-	           
-	        } catch (AmazonClientException ace) {
-	            System.out.println("Error Message: " + ace.getMessage());
-	        }
-		
-		  return retVal;
-	}
 
 	static boolean isImage (File file) {
 		  //Simple test to see if the file is an image file based on extension (even though that is no guarantee). 
