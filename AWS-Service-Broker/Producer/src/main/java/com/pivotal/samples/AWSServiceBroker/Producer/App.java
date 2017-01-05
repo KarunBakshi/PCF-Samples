@@ -1,6 +1,7 @@
 
 package com.pivotal.samples.AWSServiceBroker.Producer;
 
+
 import java.awt.image.BufferedImage;
 
 import java.io.BufferedReader;
@@ -84,8 +85,7 @@ public class App {
 		
 		 System.out.println("Getting credentials from environment...");
     	//Get credentials from the environment
-    	Map<String, String> envVar = System.getenv();    	
-    	printEnv(envVar);
+    	Map<String, String> envVar = System.getenv();    	    	
         JSONObject obj = new JSONObject(envVar.get(VCAP_SERVICES_ENV_VAR));
         
         JSONObject s3Obj = obj.getJSONArray(AWS_S3_ENV_VAR).getJSONObject(0).getJSONObject(AWS_CREDENTIALS_ENV_VAR);
@@ -110,11 +110,11 @@ public class App {
         AmazonSQS sqs = new AmazonSQSClient(mySQSCreds);
         sqs.setRegion(Region.getRegion(Regions.fromName(queueRegion)));
 	    
-        String monitoredDirectory = envVar.get(MONITORED_DIRECTORY_ENV_VAR);
-	    
+        String monitoredDirectory = envVar.get(MONITORED_DIRECTORY_ENV_VAR);	
+		
 	    //Content type stays constant
 	    metadata.setContentType(IMAGE_CONTENT_MIME_TYPE);
-	    
+	    	
 	    //Poll local directory for changes - Loop infinitely
 	    System.out.println("Polling Directory " + monitoredDirectory);
         while (true) {
@@ -173,7 +173,6 @@ public class App {
 			
 			return imageByteArray;
 	}
-
 
 	static boolean isImage (File file) {
 		  //Simple test to see if the file is an image file based on extension (even though that is no guarantee). 
