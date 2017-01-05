@@ -185,18 +185,5 @@ public class App {
 		  }
 		  return retVal;
 	  }
-    static void printEnv(Map<String, String> env) {
-    	Set<Entry<String, String>> values = env.entrySet();
-    	Iterator<Entry<String, String>> i = values.iterator();
-    	Entry <String, String> e;
-    	System.out.println("--------------------------ENV VALUE--------------------------");
-    	while (i.hasNext()) {
-    		e = i.next();    		
-    		System.out.println("KEY NAME: " + e.getKey());
-    		System.out.println("KEY VALUE: " + e.getValue());
-    	}
-    	System.out.println("--------------------------ENV VALUE--------------------------");
-    }
-
 
 }
